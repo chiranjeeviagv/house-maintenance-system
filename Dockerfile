@@ -1,4 +1,5 @@
-FROM node:18-alpine
+# Change node:18-alpine to node:22-alpine
+FROM node:22-alpine
 
 WORKDIR /usr/src/app
 
