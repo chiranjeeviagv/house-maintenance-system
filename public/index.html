@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Maintenance System</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #27ae60; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #219653; }
+        .task-list { display: grid; gap: 15px; }
+        .task-item { background: #fff; border-left: 5px solid #3498db; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .task-item.High { border-left-color: #e74c3c; }
+        .task-item.Low { border-left-color: #f1c40f; }
+        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; background: #e0e0e0; }
+        .status-Done { background: #2ecc71; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏡 House Maintenance Portal</h1>
+            <p>Log and Track Home Repair Requests</p>
+        </header>
+
+        <div class="card">
+            <h2>Add New Maintenance Request</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label>Task Title</label>
+                    <input type="text" id="title" placeholder="e.g., Leaky Kitchen Pipe" required>
+                </div>
+                <div class="form-group">
+                    <label>Room / Area</label>
+                    <input type="text" id="room" placeholder="e.g., Kitchen" required>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="priority">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <button type="submit">Submit Request</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Active Maintenance Log</h2>
+            <div id="taskList" class="task-list">Loading issues...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000/api/tasks' : '/api/tasks';
+
+        async function fetchTasks() {
+            const res = await fetch(API_URL);
+            const tasks = await res.json();
+            const list = document.getElementById('taskList');
+            list.innerHTML = tasks.length === 0 ? '<p>No current home maintenance requests recorded!</p>' : '';
+            tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = `task-item ${task.priority}`;
+                item.innerHTML = `
+                    <div>
+                        <strong>${task.title}</strong> <small style="color:#7f8c8d;">(${task.room})</small>
+                        <br><span style="font-size:12px;color:#95a5a6;">Priority: ${task.priority}</span>
+                    </div>
+                    <div>
+                        <span class="status-badge status-${task.status}">${task.status}</span>
+                        ${task.status !== 'Done' ? `<button onclick="completeTask('${task._id}')" style="padding:4px 8px;font-size:12px;margin-left:10px;background:#34495e;">Mark Done</button>` : ''}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        document.getElementById('taskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const room = document.getElementById('room').value;
+            const priority = document.getElementById('priority').value;
+
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, room, priority })
+            });
+
+            document.getElementById('taskForm').reset();
+            fetchTasks();
+        });
+
+        async function completeTask(id) {
+            await fetch(`${API_URL}/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Done' })
+            });
+            fetchTasks();
+        }
+
+        fetchTasks();
+    </script>
+</body>
+</html>
